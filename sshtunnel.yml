@@ -1,0 +1,12 @@
+ssh_config:
+  host: "<hostip>"
+  port: 22
+  user: "<remote_username>"
+  private_key: "C:\\Users\\<local_username>\\.ssh\\id_rsa"
+  tunnels: # Added the "tunnels" key
+    - local_ip: "0.0.0.0"
+      local_port: 5000
+      remote_port: 7000
+    - local_ip: "0.0.0.0"
+      local_port: 5200
+      remote_port: 7200
