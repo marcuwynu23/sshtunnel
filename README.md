@@ -1,4 +1,14 @@
-# **SSHTunnel**
+<div align="center">
+  <h1> SSHTunnel </h1>
+</div>
+
+<p align="center">
+  <img src="https://img.shields.io/github/stars/marcuwynu23/SSHTunnel.svg" alt="Stars Badge"/>
+  <img src="https://img.shields.io/github/forks/marcuwynu23/SSHTunnel.svg" alt="Forks Badge"/>
+  <img src="https://img.shields.io/github/issues/marcuwynu23/SSHTunnel.svg" alt="Issues Badge"/>
+  <img src="https://img.shields.io/github/license/marcuwynu23/SSHTunnel.svg" alt="License Badge"/>
+</p>
+
 
 **SSHTunnel** is a cross-platform command-line utility designed for **reverse SSH tunneling** using a configuration file (`sshtunnel.yml`). This tool simplifies the process of creating SSH tunnels by using a predefined configuration, making it easy to manage multiple tunnels without specifying all the parameters in the command line.
 
