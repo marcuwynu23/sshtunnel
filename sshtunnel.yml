@@ -5,8 +5,6 @@ ssh_config:
   private_key: "C:\\Users\\<local_username>\\.ssh\\id_rsa"
   tunnels: # Added the "tunnels" key
     - local_ip: "0.0.0.0"
-      local_port: 5000
-      remote_port: 7000
-    - local_ip: "0.0.0.0"
-      local_port: 5200
-      remote_port: 7200
+      local_port: 5600
+      remote_ip: "0.0.0.0" 
+      remote_port: 7893 

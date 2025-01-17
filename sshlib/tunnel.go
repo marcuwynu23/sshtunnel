@@ -28,6 +28,7 @@ type SSHConfig struct {
 type Tunnel struct {
 	LocalIP    string `yaml:"local_ip"`   // New field to specify local IP
 	LocalPort  int    `yaml:"local_port"`
+	RemoteIP   string `yaml:"remote_ip"`
 	RemotePort int    `yaml:"remote_port"`
 }
 
@@ -74,8 +75,9 @@ func sshDial(config *SSHConfig) (*ssh.Client, error) {
 
 // Function to start the reverse SSH tunnel
 func startTunnel(client *ssh.Client, config *SSHConfig, tunnel Tunnel) error {
-    // Listen on the remote server's localhost for the tunnel
-    listener, err := client.Listen("tcp", fmt.Sprintf("localhost:%d", tunnel.RemotePort))
+   // Use the RemoteIP and RemotePort to configure the remote listener
+	remoteBindAddr := fmt.Sprintf("%s:%d", tunnel.RemoteIP, tunnel.RemotePort)
+	listener, err := client.Listen("tcp", remoteBindAddr)
     if err != nil {
         return fmt.Errorf("Failed to set up remote listener: %v", err)
     }
