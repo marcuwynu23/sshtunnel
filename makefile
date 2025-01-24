@@ -7,6 +7,10 @@ BUILD_DIR=build
 # Fetch the latest Git tag, stripping any extra commit info
 GIT_TAG=$(shell git describe --tags --abbrev=0)
 
+dev:
+	go build -o sshtunnel.exe
+	xcopy /Y /C sshtunnel.exe D:\Executables\sshtunnel
+
 # Go architectures and operating systems
 ARCH_LIST=amd64 386 arm64 arm
 OS_LIST=linux windows darwin

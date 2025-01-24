@@ -26,7 +26,7 @@ type SSHConfig struct {
 }
 
 type Tunnel struct {
-	LocalIP    string `yaml:"local_ip"`   // New field to specify local IP
+	LocalIP    string `yaml:"local_ip"` // New field to specify local IP
 	LocalPort  int    `yaml:"local_port"`
 	RemoteIP   string `yaml:"remote_ip"`
 	RemotePort int    `yaml:"remote_port"`
@@ -75,47 +75,45 @@ func sshDial(config *SSHConfig) (*ssh.Client, error) {
 
 // Function to start the reverse SSH tunnel
 func startTunnel(client *ssh.Client, config *SSHConfig, tunnel Tunnel) error {
-   // Use the RemoteIP and RemotePort to configure the remote listener
+	// Use the RemoteIP and RemotePort to configure the remote listener
 	remoteBindAddr := fmt.Sprintf("%s:%d", tunnel.RemoteIP, tunnel.RemotePort)
 	listener, err := client.Listen("tcp", remoteBindAddr)
-    if err != nil {
-        return fmt.Errorf("Failed to set up remote listener: %v", err)
-    }
-    defer listener.Close()
+	if err != nil {
+		return fmt.Errorf("Failed to set up remote listener: %v", err)
+	}
+	defer listener.Close()
 
-    // Log the host address and tunnel details
-    log.Printf("Tunneling from remote address %s:%d to local address %s:%d", config.Host, tunnel.RemotePort, tunnel.LocalIP, tunnel.LocalPort)
+	// Log the host address and tunnel details
+	log.Printf("Tunneling from remote address %s@%s:%d to local address %s:%d", tunnel.RemoteIP, config.Host, tunnel.RemotePort, tunnel.LocalIP, tunnel.LocalPort)
 
-    for {
-        conn, err := listener.Accept()
-        if err != nil {
-            return fmt.Errorf("Listener accept failed: %v", err)
-        }
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			return fmt.Errorf("Listener accept failed: %v", err)
+		}
 
-        go handleTunnel(conn, tunnel.LocalIP, tunnel.LocalPort)
-    }
+		go handleTunnel(conn, tunnel.LocalIP, tunnel.LocalPort)
+	}
 }
-
 
 // Function to handle individual tunnel connections
 func handleTunnel(conn net.Conn, localIP string, localPort int) {
-    defer conn.Close()
+	defer conn.Close()
 
-    // Use the LocalIP and LocalPort to dial the local service
-    localConn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", localIP, localPort))
-    if err != nil {
-        log.Printf("Failed to connect to local service at %s:%d: %v", localIP, localPort, err)
-        return
-    }
-    defer localConn.Close()
+	// Use the LocalIP and LocalPort to dial the local service
+	localConn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", localIP, localPort))
+	if err != nil {
+		log.Printf("Failed to connect to local service at %s:%d: %v", localIP, localPort, err)
+		return
+	}
+	defer localConn.Close()
 
-    log.Printf("Connection established to local service at %s:%d", localIP, localPort)
+	log.Printf("Connection established to local service at %s:%d", localIP, localPort)
 
-    // Forward traffic between local service and remote connection
-    go func() { _, _ = io.Copy(localConn, conn) }()
-    _, _ = io.Copy(conn, localConn)
+	// Forward traffic between local service and remote connection
+	go func() { _, _ = io.Copy(localConn, conn) }()
+	_, _ = io.Copy(conn, localConn)
 }
-
 
 // Function to continuously try reconnecting if the SSH connection fails
 func MaintainSSHConnection(config *Config) {
