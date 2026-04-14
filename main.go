@@ -1,6 +1,8 @@
 package main
 
 import (
+    "fmt"
+    "flag"
     "log"
     "os"
     "path/filepath"
@@ -10,22 +12,41 @@ import (
 )
 
 func main() {
-    // Setup logging to both file and console
-    sshlib.SetupLogging()
-
-    // Print banner at startup
-    sshlib.PrintBanner()
-
-    // Get the executable's directory and form the full config file path
+    // Get the executable's directory and form the default config file path.
     executablePath, err := os.Executable()
     if err != nil {
         log.Fatalf("Error retrieving executable path: %v", err)
     }
     executableDir := filepath.Dir(executablePath)
-    configFilePath := filepath.Join(executableDir, "sshtunnel.yml")
+    defaultConfigFilePath := filepath.Join(executableDir, "sshtunnel.yml")
+
+    // CLI options.
+    configFlag := flag.String("config", "", "Path to config file (default: executable_dir/sshtunnel.yml)")
+    flag.Usage = func() {
+        fmt.Fprintf(os.Stderr, "Usage: %s [--config <config-file>]\n", filepath.Base(os.Args[0]))
+        fmt.Fprintln(os.Stderr, "Options:")
+        flag.PrintDefaults()
+    }
+    flag.Parse()
+
+    configFilePath := defaultConfigFilePath
+    if *configFlag != "" {
+        configFilePath = *configFlag
+    }
+
+    absConfigFilePath, err := filepath.Abs(configFilePath)
+    if err != nil {
+        log.Fatalf("Error resolving config file path: %v", err)
+    }
+
+    // Setup logging to both file and console, with log path near config.
+    sshlib.SetupLogging(filepath.Dir(absConfigFilePath))
+
+    // Print banner at startup
+    sshlib.PrintBanner()
 
     // Load the initial config
-    config, err := sshlib.LoadConfig(configFilePath)
+    config, err := sshlib.LoadConfig(absConfigFilePath)
     if err != nil {
         log.Fatalf("Error loading config file: %v", err)
     }
@@ -35,7 +56,7 @@ func main() {
     startSSHTunneling(config)
 
     // Monitor config.yml for changes
-    watchConfigFile(configFilePath)
+    watchConfigFile(absConfigFilePath)
 }
 
 func startSSHTunneling(config *sshlib.Config) {

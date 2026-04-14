@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -146,9 +147,10 @@ func MaintainSSHConnection(config *Config) {
 }
 
 // Set up logging
-func SetupLogging() {
-	// Open a log file in append mode
-	logFile, err := os.OpenFile("ssh_tunneling.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func SetupLogging(logDir string) {
+	// Open a log file in append mode in the selected log directory.
+	logFilePath := filepath.Join(logDir, "ssh_tunneling.log")
+	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalf("Failed to open log file: %v", err)
 	}
