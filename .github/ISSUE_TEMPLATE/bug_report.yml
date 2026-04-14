@@ -1,0 +1,76 @@
+name: Bug report
+description: Report a reproducible problem with sshtunnel
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please include enough detail so we can reproduce it.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+      placeholder: Briefly describe the bug and expected behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps to reproduce the issue.
+      placeholder: |
+        1. Run command ...
+        2. Use config ...
+        3. Observe error ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Config (sanitized)
+      description: Paste relevant `sshtunnel.yml` parts (remove secrets/private keys).
+      render: yaml
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs/output
+      description: Paste relevant logs or command output.
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: sshtunnel version, commit, or build info.
+      placeholder: e.g. v1.2.3 or commit SHA
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      description: Operating system and version.
+      placeholder: e.g. Windows 11, Ubuntu 24.04, macOS 14
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues before opening this bug report.
+          required: true
+        - label: I removed secrets and private key material from logs/config.
+          required: true
