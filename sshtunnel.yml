@@ -1,5 +1,5 @@
 ssh_config:
-  host: "203.161.53.228"
+  host: "203.167.53.146"
   port: 22
   user: "root"
   private_key: "C:\\Users\\Computer2\\.ssh\\id_rsa"
