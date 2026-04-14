@@ -141,7 +141,35 @@ Once the configuration file is set up, you can start the SSH tunnel by simply ru
 sshtunnel
 ```
 
-This will read the `sshtunnel.yml` file from the current directory and establish the reverse SSH tunnels as defined in the configuration.
+By default, this reads `sshtunnel.yml` from the executable directory (global/default config path) and establishes the reverse SSH tunnels.
+
+Use a specific local config file with:
+
+```bash
+sshtunnel --config ./sshtunnel.yml
+```
+
+When `--config` is used, the `ssh_tunneling.log` file is also created in that config file's directory.
+
+Show CLI help with:
+
+```bash
+sshtunnel --help
+```
+
+### **CLI Options**
+
+- `--help`: Show help/usage output.
+- `--config <config-file>`: Use a specific config file path.
+  - If omitted, SSHTunnel uses the global/default config: `executable_dir/sshtunnel.yml`.
+  - Log file location follows the selected config directory.
+
+## **Recent Changes**
+
+- Added support for `--help` to show command usage and options.
+- Added support for `--config <config-file>` so you can run with a local config file.
+- Default behavior is preserved: without `--config`, SSHTunnel reads the global config near the executable.
+- Logging behavior improved: `ssh_tunneling.log` is created in the same directory as the active config file.
 
 ### **3. Configuration Options**
 
