@@ -1,247 +1,323 @@
 <div align="center">
-  <h1> SSHTunnel </h1>
+
+<img src="./resources/logo.svg" width="420" alt="SSHTunnel logo">
+
+<a href="https://github.com/marcuwynu23/sshtunnel/releases"><img src="https://img.shields.io/github/v/release/marcuwynu23/sshtunnel" alt="Release"></a>
+<a href="https://github.com/marcuwynu23/sshtunnel/blob/main/LICENSE"><img src="https://img.shields.io/github/license/marcuwynu23/sshtunnel?logo=github" alt="License"></a>
+<a href="https://github.com/marcuwynu23/sshtunnel"><img src="https://img.shields.io/github/stars/marcuwynu23/sshtunnel" alt="Stars"></a>
+<img src="https://img.shields.io/github/go-mod/go-version/marcuwynu23/sshtunnel" alt="Go version">
+
+<strong>Reverse SSH tunnels, configured in YAML.</strong> A cross-platform CLI tool that reads a simple config file and keeps your tunnels alive — automatically reconnecting on failure and hot-reloading on config changes.
+
+➡️ **[Read the full user guide →](USER-GUIDE.md)**
+
 </div>
 
-<p align="center">
-  <img src="https://img.shields.io/github/stars/marcuwynu23/SSHTunnel.svg" alt="Stars Badge"/>
-  <img src="https://img.shields.io/github/forks/marcuwynu23/SSHTunnel.svg" alt="Forks Badge"/>
-  <img src="https://img.shields.io/github/issues/marcuwynu23/SSHTunnel.svg" alt="Issues Badge"/>
-  <img src="https://img.shields.io/github/license/marcuwynu23/SSHTunnel.svg" alt="License Badge"/>
-</p>
+---
 
+## Table of Contents
 
-**SSHTunnel** is a cross-platform command-line utility designed for **reverse SSH tunneling** using a configuration file (`sshtunnel.yml`). This tool simplifies the process of creating SSH tunnels by using a predefined configuration, making it easy to manage multiple tunnels without specifying all the parameters in the command line.
+- [What Is SSHTunnel?](#what-is-sshtunnel)
+- [Use Cases](#use-cases)
+- [Benefits](#benefits-for-developers)
+- [Comparison](#advantages-over-other-tools)
+- [User Guide](USER-GUIDE.md)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [CLI Reference](#cli-commands)
+- [Configuration](#configuration)
+- [Development](#development)
+- [Architecture](#architecture)
 
-## **Key Features**
+---
 
-- **Reverse SSH Tunneling**: Facilitates SSH tunneling from a remote machine back to the local machine, enabling access to services behind NAT or firewalls.
-- **YAML Configuration**: Configure multiple tunnels and SSH options through a simple YAML file.
-- **Cross-Platform**: Works on Linux, Windows, and macOS.
-- **Multiple Tunnels**: Supports defining and running multiple tunnels at once through the configuration file.
-- **Secure Authentication**: Uses private keys for SSH authentication.
+## What Is SSHTunnel?
 
-## **What is Reverse SSH Tunneling?**
+**SSHTunnel** is a Go-based CLI tool that establishes and maintains **reverse SSH tunnels** from a single YAML configuration file. It handles reconnection, hot-reloads when the config changes, and logs to both console and file.
 
-**Reverse SSH tunneling** allows a machine that is behind a firewall or without a public IP to expose a port on a remote server that has a public IP. This technique is useful for:
+### What It Does
 
-- Accessing devices or servers behind firewalls or NAT.
-- Exposing local services (e.g., web servers, databases) securely to the internet.
-- Remotely managing devices or systems without direct public access.
+- **Configure in YAML** — Define SSH host, port, user, private key, and one or more tunnels in a single file
+- **Reverse-tunnel automatically** — Each tunnel forwards a remote port back to a local service
+- **Reconnect on failure** — Drops and retries every 10 seconds if the SSH connection dies
+- **Hot-reload config** — Edit `sshtunnel.yml` while it runs; tunnels restart automatically
+- **Log to file + console** — Writes structured logs to `ssh_tunneling.log` alongside the config file
+- **Cross-compile to 8 targets** — Linux (amd64/386/arm64/arm), Windows (amd64/386), macOS (amd64)
+- **Zero runtime dependencies** — Single static binary, no SSH client required on the target
 
-## **How It Works**
+### Why Use It?
 
-1. **SSHTunnel** reads from a configuration file (`sshtunnel.yml`) to establish an SSH connection to a remote server.
-2. The remote server sets up reverse tunnels as defined in the configuration file.
-3. Any connection to the specified remote ports on the server will be tunneled to the corresponding local ports on the remote machine.
+| Problem                                         | How SSHTunnel Solves It                                                                                                      |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Services behind NAT or firewall are unreachable | **Reverse tunnel** — the machine behind NAT initiates the outbound SSH connection and exposes local ports on a public server |
+| SSH commands are long and easy to mistype       | **YAML config** — declare tunnels once in a structured file; running is just `sshtunnel`                                     |
+| SSH connections drop unpredictably              | **Auto-reconnect** — retries the connection every 10 seconds and re-establishes all tunnels                                  |
+| Config changes require restarting tunnels       | **Hot-reload** — edit `sshtunnel.yml` and the tool picks it up via `fsnotify`                                                |
+| Hard to tell what happened while you were away  | **Dual logging** — every event goes to both the terminal and `ssh_tunneling.log`                                             |
 
-### **Example Configuration**
+### The Philosophy
+
+1. **Configuration over invocation.** You shouldn't have to type 200 characters of SSH flags every time. Define everything in YAML once and run a single command.
+2. **Resilient by default.** Connections fail. SSHTunnel assumes they will and bounces back automatically — no `systemd` unit or supervisor process required.
+3. **Your data stays yours.** No cloud, no telemetry, no accounts. The binary and a config file are all you need.
+
+---
+
+## Use Cases
+
+| Scenario                                       | How SSHTunnel Helps                                                                       |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **Expose a local dev server to the internet**  | Forward `localhost:8080` → `public-server:9090` for testing webhooks                      |
+| **Remote Raspberry Pi management**             | Expose SSH (port 22) behind a home NAT to a VPS on port 2222                              |
+| **Database access from a locked-down network** | Tunnel a local `postgres:5432` to a remote port so your office can reach it               |
+| **CI/CD runner behind a firewall**             | Self-hosted runners can expose build metrics or debug ports through a single outbound SSH |
+
+---
+
+## Benefits for Developers
+
+- **~10-second setup** — Write 5 lines of YAML and run the binary
+- **Single binary** — No runtime, no dependencies, no package manager required
+- **Multi-arch builds** — `make all` produces tarballs for Linux, Windows, and macOS on x86 and ARM
+- **Config hot-reload** — No downtime when adding or removing tunnels
+- **Automatic reconnection** — Survives network blips and server restarts
+- **Simple CLI** — Two flags (`--config` and `--help`), no subcommands
+- **MIT licensed** — Free for personal and commercial use
+- **Private key authentication** — Uses your existing SSH keys; no passwords stored in config
+
+---
+
+## Advantages Over Other Tools
+
+| Aspect                  | SSHTunnel             | `autossh`              | `ssh -R` manual        | `ngrok` / `bore`         |
+| ----------------------- | --------------------- | ---------------------- | ---------------------- | ------------------------ |
+| **Setup time**          | ~10 seconds           | ~2 minutes             | Repeating effort       | ~30 seconds              |
+| **Config file**         | YAML (single file)    | Environment / args     | None (CLI flags)       | CLI flags / TOML         |
+| **Hot-reload**          | Yes (fsnotify)        | No                     | No                     | Partial (CLI restart)    |
+| **Auto-reconnect**      | Built-in (10 s retry) | Built-in (monitors)    | No                     | Built-in                 |
+| **Multi-tunnel**        | Array in YAML         | Multiple processes     | Multiple commands      | Per-tunnel process       |
+| **Auth method**         | Private key           | Key / password / agent | Key / password / agent | Service account          |
+| **Cross-platform**      | Linux, Windows, macOS | Linux, macOS           | Everywhere with SSH    | Linux, Windows, macOS    |
+| **Third-party service** | No (your own server)  | No                     | No                     | Yes (ngrok/bore servers) |
+| **License**             | MIT                   | Custom (GPL-like)      | OpenSSH license        | Proprietary / Apache 2.0 |
+| **Binary size**         | ~5 MB (compressed)    | ~100 KB (+ SSH)        | Built-in               | ~10 MB                   |
+
+---
+
+## Installation
+
+### Download a Prebuilt Binary
+
+Grab the latest tarball for your platform from the [releases page](https://github.com/marcuwynu23/sshtunnel/releases):
+
+| Platform      | File                                       |
+| ------------- | ------------------------------------------ |
+| Linux amd64   | `sshtunnel_linux_amd64_<version>.tar.gz`   |
+| Linux 386     | `sshtunnel_linux_386_<version>.tar.gz`     |
+| Linux arm64   | `sshtunnel_linux_arm64_<version>.tar.gz`   |
+| Linux arm     | `sshtunnel_linux_arm_<version>.tar.gz`     |
+| Windows amd64 | `sshtunnel_windows_amd64_<version>.tar.gz` |
+| Windows 386   | `sshtunnel_windows_386_<version>.tar.gz`   |
+| macOS amd64   | `sshtunnel_macos_amd64_<version>.tar.gz`   |
+
+Extract and run:
+
+```bash
+tar xzf sshtunnel_linux_amd64_<version>.tar.gz
+cd sshtunnel_linux_amd64_<version>
+./sshtunnel --help
+```
+
+### Build from Source
+
+```bash
+git clone https://github.com/marcuwynu23/sshtunnel.git
+cd sshtunnel
+go build -o sshtunnel main.go
+./sshtunnel --help
+```
+
+Requires **Go 1.23+**.
+
+---
+
+## Quick Start
+
+Create a file called `sshtunnel.yml` in the same directory as the binary:
 
 ```yaml
 ssh_config:
-  host: "<hostip>"
+  host: "203.0.113.1"
   port: 22
-  user: "<remote_username>"
-  private_key: "C:\Users\<local_username>\.ssh\id_rsa"
+  user: "deploy"
+  private_key: "/home/deploy/.ssh/id_ed25519"
   tunnels:
     - local_ip: "0.0.0.0"
-      local_port: 5000
-      remote_port: 7000
-    - local_ip: "0.0.0.0"
-      local_port: 5200
-      remote_port: 7200
+      local_port: 8080
+      remote_ip: "0.0.0.0"
+      remote_port: 9090
 ```
 
-- **host**: The IP address or hostname of the remote server.
-- **port**: The SSH port (usually `22`).
-- **user**: The SSH username for the remote server.
-- **private_key**: The path to the private SSH key used for authentication.
-- **tunnels**: An array of tunnels where each tunnel forwards traffic from a remote port on the server to a local port on the remote machine.
-
-### **Example Use Case**
-
-Let’s say you want to access a service running on port `5000` on your local machine, which is behind a NAT firewall, and make it available on port `7000` of a public server. Additionally, you want to forward another local port (`5200`) to the public server's port `7200`. You would define this configuration in `sshtunnel.yml`:
-
-```yaml
-ssh_config:
-  host: "123.45.67.89"
-  port: 22
-  user: "remote_user"
-  private_key: "/home/user/.ssh/id_rsa"
-  tunnels:
-    - local_ip: "0.0.0.0"
-      local_port: 5000
-      remote_port: 7000
-    - local_ip: "0.0.0.0"
-      local_port: 5200
-      remote_port: 7200
-```
-
-When **SSHTunnel** is executed, it will set up two reverse tunnels:
-
-1. Remote port `7000` on the public server will forward to local port `5000` on the local machine.
-2. Remote port `7200` on the public server will forward to local port `5200` on the local machine.
-
-## **Installation**
-
-### **Download Prebuilt Binaries**
-
-You can download prebuilt binaries for your platform from the [releases page](https://github.com/marcuwynu23/sshtunnel/releases).
-
-Available binaries:
-
-- `sshtunnel_linux_amd64`
-- `sshtunnel_windows_amd64.exe`
-- `sshtunnel_macos_amd64`
-
-### **Building from Source**
-
-To build SSHTunnel from source, you need to have Go installed on your system. Follow these steps:
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/yourusername/sshtunnel.git
-   cd sshtunnel
-   ```
-
-2. Build the binary:
-
-   ```bash
-   go build -o sshtunnel main.go
-   ```
-
-3. The binary `sshtunnel` will be generated in your current directory.
-
-## **Usage**
-
-### **1. Create the Configuration File**
-
-Create a configuration file called `sshtunnel.yml` with your SSH connection details and the tunnels you want to establish. For example:
-
-```yaml
-ssh_config:
-  host: "123.45.67.89"
-  port: 22
-  user: "remote_user"
-  private_key: "/home/user/.ssh/id_rsa"
-  tunnels:
-    - local_ip: "0.0.0.0"
-      local_port: 5000
-      remote_port: 7000
-    - local_ip: "0.0.0.0"
-      local_port: 5200
-      remote_port: 7200
-```
-
-### **2. Run the SSHTunnel Command**
-
-Once the configuration file is set up, you can start the SSH tunnel by simply running:
+Then run:
 
 ```bash
 sshtunnel
 ```
 
-By default, this reads `sshtunnel.yml` from the executable directory (global/default config path) and establishes the reverse SSH tunnels.
+The tool connects to `203.0.113.1`, opens a reverse tunnel so that port 9090 on the remote server forwards traffic to port 8080 on your machine, and begins logging to `ssh_tunneling.log`.
 
-Use a specific local config file with:
+---
+
+## CLI Commands
+
+### `sshtunnel`
+
+Start the SSH tunneling service using the config file found next to the binary.
 
 ```bash
-sshtunnel --config ./sshtunnel.yml
+sshtunnel [--config <path>]
 ```
 
-When `--config` is used, the `ssh_tunneling.log` file is also created in that config file's directory.
+| Flag       | Default                          | Description                         |
+| ---------- | -------------------------------- | ----------------------------------- |
+| `--config` | `<executable_dir>/sshtunnel.yml` | Path to the YAML configuration file |
+| `--help`   | —                                | Show usage text and exit            |
 
-Show CLI help with:
+#### Examples
+
+**Use the default config (next to the binary):**
+
+```bash
+sshtunnel
+```
+
+**Use a specific config file:**
+
+```bash
+sshtunnel --config ./production.yml
+```
+
+**Show help:**
 
 ```bash
 sshtunnel --help
 ```
 
-### **CLI Options**
+---
 
-- `--help`: Show help/usage output.
-- `--config <config-file>`: Use a specific config file path.
-  - If omitted, SSHTunnel uses the global/default config: `executable_dir/sshtunnel.yml`.
-  - Log file location follows the selected config directory.
+## Configuration
 
-## **Recent Changes**
+The entire tool is driven by a single YAML file (`sshtunnel.yml`):
 
-- Added support for `--help` to show command usage and options.
-- Added support for `--config <config-file>` so you can run with a local config file.
-- Default behavior is preserved: without `--config`, SSHTunnel reads the global config near the executable.
-- Logging behavior improved: `ssh_tunneling.log` is created in the same directory as the active config file.
+```yaml
+ssh_config:
+  host: "203.0.113.1"
+  port: 22
+  user: "deploy"
+  private_key: "/home/deploy/.ssh/id_ed25519"
+  tunnels:
+    - local_ip: "0.0.0.0"
+      local_port: 8080
+      remote_ip: "0.0.0.0"
+      remote_port: 9090
+    - local_ip: "127.0.0.1"
+      local_port: 3000
+      remote_ip: "0.0.0.0"
+      remote_port: 3000
+```
 
-### **3. Configuration Options**
+### Fields
 
-- **host**: The IP address or domain of the SSH server.
-- **port**: The SSH port (default is `22`).
-- **user**: SSH username on the remote server.
-- **private_key**: Path to your private SSH key for authentication.
-- **tunnels**: Define an array of tunnels. Each tunnel requires:
-  - `local_ip`: The local IP (usually `0.0.0.0` to bind to all interfaces).
-  - `local_port`: The port on the local machine to forward.
-  - `remote_port`: The port on the remote server to expose the forwarded service.
+| Key                      | Type   | Default     | Description                                                                                   |
+| ------------------------ | ------ | ----------- | --------------------------------------------------------------------------------------------- |
+| `ssh_config.host`        | string | —           | Remote SSH server hostname or IP                                                              |
+| `ssh_config.port`        | int    | `22`        | SSH port on the remote server                                                                 |
+| `ssh_config.user`        | string | —           | SSH login username                                                                            |
+| `ssh_config.private_key` | string | —           | Path to the private key file for authentication                                               |
+| `ssh_config.tunnels`     | array  | `[]`        | List of tunnel definitions                                                                    |
+| `tunnels[].local_ip`     | string | `"0.0.0.0"` | Local IP to bind the incoming side of the tunnel                                              |
+| `tunnels[].local_port`   | int    | —           | Local port to forward traffic to                                                              |
+| `tunnels[].remote_ip`    | string | `"0.0.0.0"` | Remote IP to bind the listener on the SSH server (must be `0.0.0.0` or an IP the server owns) |
+| `tunnels[].remote_port`  | int    | —           | Remote port to expose on the SSH server                                                       |
 
-### **Running in the Background**
+### Config Precedence
 
-To run SSHTunnel as a background service, you can use your system's process control methods (e.g., `nohup`, `systemd`, or `Windows Services`).
+The `--config` CLI flag overrides the default path (`<executable_dir>/sshtunnel.yml`). There is no cascade from environment variables or system-wide paths.
 
-### **Examples**
+---
 
-1. **Expose a local web server to the public:**
+## Development
 
-   In the `sshtunnel.yml`:
+### Prerequisites
 
-   ```yaml
-   ssh_config:
-     host: "example.com"
-     port: 22
-     user: "remote_user"
-     private_key: "/home/user/.ssh/id_rsa"
-     tunnels:
-       - local_ip: "0.0.0.0"
-         local_port: 8080
-         remote_port: 9090
-   ```
+| Tool | Version | Purpose                                                       |
+| ---- | ------- | ------------------------------------------------------------- |
+| Go   | 1.23+   | Compiler and toolchain                                        |
+| make | any     | Build automation (optional — you can run `go build` directly) |
 
-   Running `sshtunnel` will forward local port `8080` to port `9090` on `example.com`.
+### Commands
 
-2. **Expose SSH from behind a NAT:**
+```bash
+git clone https://github.com/marcuwynu23/sshtunnel.git
+cd sshtunnel
 
-   To expose your SSH port behind a NAT to a remote server:
+# Build for your current platform
+make dev          # builds sshtunnel.exe and copies it to D:\Executables\sshtunnel (Windows)
 
-   ```yaml
-   ssh_config:
-     host: "123.45.67.89"
-     port: 22
-     user: "remote_user"
-     private_key: "~/.ssh/id_rsa"
-     tunnels:
-       - local_ip: "0.0.0.0"
-         local_port: 22
-         remote_port: 2222
-   ```
+# Full CI check (fmt → vet → test → build)
+make ci
 
-   Running `sshtunnel` will expose your local SSH on port `22` to the remote server on port `2222`.
+# Cross-compile for all supported platforms
+make all
 
-## **System Requirements**
+# Run the tool locally
+./sshtunnel --config sshtunnel.yml
+```
 
-- **Go 1.16+** for building from source.
-- **SSH** client installed on your system.
-- Binaries available for the following platforms:
-  - Linux (64-bit and 32-bit)
-  - Windows (64-bit and 32-bit)
-  - macOS (64-bit)
+Every `make` target is documented in the [Makefile Reference](USER-GUIDE.md#makefile-reference) section of the user guide.
 
-## **Contributing**
+### Project Structure
 
-We welcome contributions! If you find a bug or have a feature request, feel free to open an issue or submit a pull request.
+```
+sshtunnel/
+├── main.go              # Entry point — CLI, config load, file watcher
+├── sshlib/
+│   └── tunnel.go        # SSH dial, tunnel loop, log setup, banner
+├── sshtunnel.yml        # Example / default config file
+├── makefile             # Cross-compilation build system
+├── resources/
+│   └── logo.svg         # Project logo
+├── .github/
+│   ├── workflows/
+│   │   ├── test.yml     # CI: run on push/PR to main
+│   │   └── release.yml  # CD: build & publish on tag push
+│   ├── ISSUE_TEMPLATE/  # Bug report and feature request templates
+│   └── PULL_REQUEST_TEMPLATE.md
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── CODE_OF_CONDUCT.md
+├── SECURITY.md
+└── LICENSE
+```
 
-1. Fork the repository.
-2. Create a feature branch.
-3. Make your changes.
-4. Open a pull request.
+---
 
-## **License**
+## Architecture
 
-SSHTunnel is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+SSHTunnel is a single-process Go application with three concurrent concerns:
+
+1. **CLI / Config** — `main.go` parses flags, resolves the config path, loads the YAML, and passes it to the tunnel manager.
+2. **SSH Tunnel Manager** — `sshlib/tunnel.go` dials the SSH server, opens a reverse listener for each tunnel definition, and copies traffic bidirectionally. If the connection drops, it retries in a 10-second loop.
+3. **File Watcher** — `main.go` uses `fsnotify` to monitor the config file for `Write` events. On change, it re-reads the YAML and re-initializes the tunnel manager — no restart required.
+
+All components share the standard `log` package, which is wired to a `io.MultiWriter` that writes to both `os.Stdout` and `ssh_tunneling.log`.
+
+---
+
+## Contributing
+
+We welcome contributions! Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full guide on setting up a development environment, coding standards, commit conventions, and the PR process.
+
+## License
+
+SSHTunnel is licensed under the MIT License. See [`LICENSE`](LICENSE) for details.
