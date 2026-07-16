@@ -16,7 +16,7 @@ Please do **not** open a public GitHub issue for security vulnerabilities.
 
 Report vulnerabilities privately by email:
 
-- **Email:** `security@your-domain.example`
+- **Email:** `help@marcuwynu.space`
 - **Subject:** `[sshtunnel] Security report`
 
 Include as much detail as possible:
