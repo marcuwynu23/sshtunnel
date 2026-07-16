@@ -66,7 +66,7 @@ func sshDial(config *SSHConfig) (*ssh.Client, error) {
 		Timeout:         5 * time.Second,
 	}
 
-	sshAddr := fmt.Sprintf("%s:%d", config.Host, config.Port)
+	sshAddr := net.JoinHostPort(config.Host, fmt.Sprintf("%d", config.Port))
 	client, err := ssh.Dial("tcp", sshAddr, sshConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial SSH: %v", err)
@@ -76,8 +76,7 @@ func sshDial(config *SSHConfig) (*ssh.Client, error) {
 
 // Function to start the reverse SSH tunnel
 func startTunnel(client *ssh.Client, config *SSHConfig, tunnel Tunnel) error {
-	// Use the RemoteIP and RemotePort to configure the remote listener
-	remoteBindAddr := fmt.Sprintf("%s:%d", tunnel.RemoteIP, tunnel.RemotePort)
+	remoteBindAddr := net.JoinHostPort(tunnel.RemoteIP, fmt.Sprintf("%d", tunnel.RemotePort))
 	listener, err := client.Listen("tcp", remoteBindAddr)
 	if err != nil {
 		return fmt.Errorf("Failed to set up remote listener: %v", err)
@@ -102,7 +101,7 @@ func handleTunnel(conn net.Conn, localIP string, localPort int) {
 	defer conn.Close()
 
 	// Use the LocalIP and LocalPort to dial the local service
-	localConn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", localIP, localPort))
+	localConn, err := net.Dial("tcp", net.JoinHostPort(localIP, fmt.Sprintf("%d", localPort)))
 	if err != nil {
 		log.Printf("Failed to connect to local service at %s:%d: %v", localIP, localPort, err)
 		return
